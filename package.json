@@ -16,11 +16,13 @@
     "@tamagui/animations-css": "latest",
     "@tamagui/core": "latest",
     "@tamagui/create-theme": "latest",
+    "@tamagui/lucide-icons": "^1.30.19",
     "@tamagui/react-native-svg": "latest",
+    "expo-linear-gradient": "^12.1.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-native-web": "^0.18.10",
-    "tamagui": "latest"
+    "tamagui": "^1.30.19"
   },
   "devDependencies": {
     "@manypkg/cli": "^0.19.1",
