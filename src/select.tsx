@@ -1,5 +1,5 @@
 import { Check, ChevronDown, ChevronUp } from '@tamagui/lucide-icons'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Adapt,
   Label,
@@ -12,24 +12,15 @@ import {
 } from 'tamagui'
 import { LinearGradient } from 'tamagui/linear-gradient'
 
-export function SelectDemo() {
-  return (
-    <YStack space>
-      <XStack ai="center" space>
-        <Label f={1} fb={0}>
-          Pick a language:
-        </Label>
-        <SelectDemoItem />
-      </XStack>
-    </YStack>
-  )
-}
+export function SelectDemoItem(props: SelectProps & {onChange: (value: string) => void}) {
+  const [language, setLanguage] = useState<string>('Rust')
 
-export function SelectDemoItem(props: SelectProps) {
-  const [val, setVal] = useState('Rust')
+  useEffect(() => {
+    props.onChange(language)
+  }, [language])
 
   return (
-    <Select id="language" value={val} onValueChange={setVal} {...props}>
+    <Select id="language" value={language} onValueChange={setLanguage} {...props}>
       <Select.Trigger width={180} iconAfter={ChevronDown}>
         <Select.Value placeholder="Something" />
       </Select.Trigger>

@@ -1,18 +1,33 @@
-import { stat } from 'fs'
-
 import { useEffect, useState } from 'react'
-import { Button, Form, H4, Input, SizeTokens, Spinner, TextArea, XStack, YStack } from 'tamagui'
-import { SelectDemo } from './select'
+import { Button, Form, H4, Input, Label, Spinner, Tabs, TextArea, XStack, YStack, Separator, H5, SizableText } from 'tamagui'
+import { SelectDemoItem } from './select'
 import { SwitchDemo } from './switch'
+import { sendRequest } from './request'
 
 export function FormsDemo() {
   const [status, setStatus] = useState<'Please fill in configuration' | 'Running requests...' | 'Requests submitted'>('Please fill in configuration')
+  const [language, setLanguage] = useState<'rust' | 'c++' | 'python multithreaded' | 'python async'>('rust')
   const [isCustom, setIsCustom] = useState<true | false>(false)
-  const [request, setRequest] = useState<string>('')
+  const [request, setRequest] = useState<string | undefined>(undefined)
   const [noOfRequests, setNoOfRequests] = useState<number>(1)
-  const [requestSize, setRequestSize] = useState<number>(1)
+  const [requestSize, setRequestSize] = useState<number | undefined>(undefined)
+  const [response, setResponse] = useState<any>(undefined)
 
   const numberMatch = new RegExp('[0-9]+', 'gi');
+
+  function updateLanguage(language: string) {
+    switch (language) {
+      case 'rust': 
+      case 'c++':
+      case 'python multithreaded':
+      case 'python async':
+        setLanguage(language)
+        break
+      default:
+        setLanguage('rust')
+        break
+    }
+  }
 
   function setNoOfRequestsWrapper(text: string) {
     if (text.match(numberMatch) === null) {
@@ -32,33 +47,34 @@ export function FormsDemo() {
       setRequestSize(1)
       return;
     }
-    let noOfRequests = parseInt(text)
-    if (noOfRequests < 1 || noOfRequests > 1024 * 1024) {
+    let requestSize = parseInt(text)
+    if (requestSize < 1 || requestSize > 1024 * 1024) {
       setRequestSize(1)
       return;
     }
-    setRequestSize(noOfRequests)
+    setRequestSize(requestSize)
   }
 
   useEffect(() => {
     if (status === 'Running requests...') {
-      console.log(noOfRequests)
-      const timer = setTimeout(() => setStatus('Please fill in configuration'), 2000)
-      return () => {
-        clearTimeout(timer)
+      async function sendRequestWrapper() {
+        let response_ = await sendRequest(language, noOfRequests, request, requestSize)
+        if (response_ !== undefined) {
+          setResponse(await response_.json())
+        }
+        setStatus('Please fill in configuration')
       }
+      sendRequestWrapper()
     }
   }, [status])
 
   useEffect(() => {
     if (!isCustom) {
-      setRequest('')
+      setRequest(undefined)
+    } else {
+      setRequestSize(undefined)
     }
   }, [isCustom])
-
-  useEffect(() => {
-    console.log(request);
-  }, [request])
 
   return (
     <Form
@@ -74,7 +90,14 @@ export function FormsDemo() {
     >
       <H4>{status[0].toUpperCase() + status.slice(1)}</H4>
 
-      <SelectDemo></SelectDemo>
+      <YStack space>
+        <XStack ai="center" space>
+          <Label f={1} fb={0}>
+            Pick a language:
+          </Label>
+          <SelectDemoItem onChange={updateLanguage}/>
+        </XStack>
+      </YStack>
 
       <SwitchDemo id='random' onCheckedChange={setIsCustom}></SwitchDemo>
 
@@ -87,15 +110,45 @@ export function FormsDemo() {
         </YStack>
       }
 
-        <YStack width={300} alignItems="center" space="$3">
-          <Input minWidth={300} inputMode='numeric' flex={1} size='$3' placeholder={`Set # of requests`} onChangeText={setNoOfRequestsWrapper}/>
-        </YStack>
+      <YStack width={300} alignItems="center" space="$3">
+        <Input minWidth={300} inputMode='numeric' flex={1} size='$3' placeholder={`Set # of requests`} onChangeText={setNoOfRequestsWrapper}/>
+      </YStack>
 
       <Form.Trigger asChild disabled={status !== 'Please fill in configuration'}>
         <Button icon={status === 'Running requests...' ? () => <Spinner /> : undefined}>
           Submit
         </Button>
       </Form.Trigger>
+      
+      <br/>
+
+      {response !== undefined 
+        ? <Tabs defaultValue="producer" orientation="horizontal" flexDirection="column" width={400} borderRadius="$4" borderWidth="$0.25" overflow="hidden" borderColor="$borderColor">
+          <Tabs.List disablePassBorderRadius="bottom" separator={<Separator vertical />} space>
+            <Tabs.Tab flex={1} value="producer"> 
+              <SizableText fontFamily="$body"> Producer </SizableText>
+            </Tabs.Tab>
+            <Tabs.Tab flex={1} value="consumer"> 
+              <SizableText fontFamily="$body"> Consumer </SizableText>
+            </Tabs.Tab>
+          </Tabs.List>
+          
+          <Separator />
+
+          <Tabs.Content alignItems="center" padding="$4" value="producer">
+            <SizableText fontFamily="$body" > Throughput: {response.producer.throughput} </SizableText>
+            <SizableText fontFamily="$body" > Latency: {response.producer.latency} </SizableText>
+            <SizableText fontFamily="$body" > Total time: {response.producer.total_time} </SizableText>
+          </Tabs.Content>
+          <Tabs.Content alignItems="center" padding="$4" value="consumer">
+            <SizableText fontFamily="$body" > Throughput: {response.consumer.throughput} </SizableText>
+            <SizableText fontFamily="$body" > Latency: {response.consumer.latency} </SizableText>
+            <SizableText fontFamily="$body" > Total time: {response.consumer.total_time} </SizableText>
+          </Tabs.Content>
+        </Tabs>
+        : undefined
+      }
+
     </Form>
   )
 }
